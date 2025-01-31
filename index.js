@@ -3,7 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser')
 
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -37,11 +37,21 @@ async function run() {
     
     const volunteerNeedsCollection = client.db('helpNow-platform').collection('volunteerNeeds');
 
-    // get all volunteerNeed data from db
+    // get all volunteerNeeds data from db
     app.get('/volunteerNeeds', async (req, res) => {
         const result = await volunteerNeedsCollection.find().toArray();
         res.send(result);
     })
+
+    // get a single volunteerNeed data from db using volunteerNeed id
+    app.get('/volunteerNeed/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await volunteerNeedsCollection.findOne(query);
+      res.send(result);
+      
+    })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error

@@ -49,7 +49,21 @@ async function run() {
       const query = {_id : new ObjectId(id)};
       const result = await volunteerNeedsCollection.findOne(query);
       res.send(result);
-      
+    })
+
+    // save a volunteer need data in db
+    app.post('/volunteerNeed', async (req, res) => {
+      const volunteerData = req.body;
+      const result = await volunteerNeedsCollection.insertOne(volunteerData);
+      res.send(result);
+    })
+
+    // get all volunteerNeed posted by specific user
+    app.get('/volunteerNeeds/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {'organizer.email': email};
+      const result = await volunteerNeedsCollection.find(query).toArray();
+      res.send(result);
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

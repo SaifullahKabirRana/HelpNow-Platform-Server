@@ -9,9 +9,9 @@ const app = express();
 
 // middleware
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
-    credentials: true,
-    optionSuccessStatus: 200,
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
+  optionSuccessStatus: 200,
 }
 
 app.use(cors(corsOptions));
@@ -34,19 +34,19 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    
+
     const volunteerNeedsCollection = client.db('helpNow-platform').collection('volunteerNeeds');
 
     // get all volunteerNeeds data from db
     app.get('/volunteerNeeds', async (req, res) => {
-        const result = await volunteerNeedsCollection.find().toArray();
-        res.send(result);
+      const result = await volunteerNeedsCollection.find().toArray();
+      res.send(result);
     })
 
     // get a single volunteerNeed data from db using volunteerNeed id
     app.get('/volunteerNeed/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedsCollection.findOne(query);
       res.send(result);
     })
@@ -61,8 +61,23 @@ async function run() {
     // get all volunteerNeed posted by specific user
     app.get('/volunteerNeeds/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {'organizer.email': email};
+      const query = { 'organizer.email': email };
       const result = await volunteerNeedsCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // update a volunteerNeed data in db
+    app.put('/volunteerNeed/:id', async (req, res) => {
+      const id = req.params.id;
+      const updateData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ...updateData
+        }
+      }
+      const result = await  volunteerNeedsCollection.updateOne(query, updateDoc, options);
       res.send(result);
     })
 
@@ -77,9 +92,9 @@ run().catch(console.dir);
 
 
 app.get('/', async (req, res) => {
-    res.send('HelpNow-Platform server is running...')
+  res.send('HelpNow-Platform server is running...')
 })
 
 app.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
+  console.log(`Server is running on port: ${port}`);
 })

@@ -89,6 +89,13 @@ async function run() {
       res.send(result);
     })
 
+    // save a volunteerRequest data in db
+    app.post('/volunteerRequest', async (req, res) => {
+      const volunteerData = req.body;
+      const result = await volunteerRequestsCollection.insertOne(volunteerData);
+      res.send(result)
+    })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error

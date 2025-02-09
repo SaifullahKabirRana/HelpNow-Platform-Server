@@ -36,7 +36,7 @@ async function run() {
   try {
 
     const volunteerNeedsCollection = client.db('helpNow-platform').collection('volunteerNeeds');
-
+    const volunteerRequestsCollection = client.db('helpNow-platform').collection('volunteerRequests')
     // get all volunteerNeeds data from db
     app.get('/volunteerNeeds', async (req, res) => {
       const result = await volunteerNeedsCollection.find().toArray();

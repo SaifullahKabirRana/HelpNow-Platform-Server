@@ -94,6 +94,14 @@ async function run() {
     app.post('/volunteerRequest', async (req, res) => {
       const volunteerData = req.body;
       const result = await volunteerRequestsCollection.insertOne(volunteerData);
+
+      // Update volunteersNeeded count in volunteerNeedsCollection
+      const updateDoc = {
+        $inc: {volunteersNeeded: -1}
+      }
+      const volunteerQuery = {_id: new ObjectId(volunteerData?.volunteerId)};
+      const updateVolunteersNeeded = await volunteerNeedsCollection.updateOne(volunteerQuery, updateDoc);
+      // console.log('update count:', updateVolunteersNeeded);
       res.send(result)
     })
 

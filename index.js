@@ -97,12 +97,20 @@ async function run() {
 
       // Update volunteersNeeded count in volunteerNeedsCollection
       const updateDoc = {
-        $inc: {volunteersNeeded: -1}
+        $inc: { volunteersNeeded: -1 }
       }
-      const volunteerQuery = {_id: new ObjectId(volunteerData?.volunteerId)};
+      const volunteerQuery = { _id: new ObjectId(volunteerData?.volunteerId) };
       const updateVolunteersNeeded = await volunteerNeedsCollection.updateOne(volunteerQuery, updateDoc);
       // console.log('update count:', updateVolunteersNeeded);
       res.send(result)
+    })
+
+    // get all volunteer request for a user by email from db
+    app.get('/my-request/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { 'volunteer.email': email };
+      const result = await volunteerRequestsCollection.find(query).toArray();
+      res.send(result);
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

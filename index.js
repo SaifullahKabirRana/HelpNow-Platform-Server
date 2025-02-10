@@ -9,7 +9,7 @@ const app = express();
 
 // middleware
 const corsOptions = {
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'https://helpnow-platform.vercel.app', 'https://helpnow-platform.web.app'],
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -37,10 +37,10 @@ async function run() {
 
     const volunteerNeedsCollection = client.db('helpNow-platform').collection('volunteerNeeds');
     const volunteerRequestsCollection = client.db('helpNow-platform').collection('volunteerRequests');
-    
+
     // get all volunteerNeeds data from db
     app.get('/volunteerNeeds', async (req, res) => {
-      const result = await volunteerNeedsCollection.find().toArray();
+      const result = await volunteerNeedsCollection.find().sort({ deadline: 1 }).toArray();
       res.send(result);
     })
 
@@ -85,7 +85,7 @@ async function run() {
     // delete a volunteerNeed data from db
     app.delete('/volunteerNeed/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedsCollection.deleteOne(query);
       res.send(result);
     })

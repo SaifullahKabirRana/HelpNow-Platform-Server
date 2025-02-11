@@ -111,6 +111,14 @@ async function run() {
       const query = { 'volunteer.email': email };
       const result = await volunteerRequestsCollection.find(query).toArray();
       res.send(result);
+    });
+
+    // delete a volunteer request data from db
+    app.delete('/volunteerRequest/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await volunteerRequestsCollection.deleteOne(query);
+      res.send(result);
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

@@ -118,7 +118,7 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
-      // Find the volunteer request before deleting (to get volunteerId)
+      // Find the volunteer request before deleting
       const volunteerRequest = await volunteerRequestsCollection.findOne(query);
       // delete the request
       const result = await volunteerRequestsCollection.deleteOne(query);
@@ -130,6 +130,17 @@ async function run() {
       }
       const updateVolunteersNeeded = await volunteerNeedsCollection.updateOne(volunteerQuery, updateDoc);
       res.send(result);
+    })
+
+    // search volunteer need posts
+    app.get('/searchPosts', async (req, res) => {
+      const search = req.query.search;
+      const query = {
+        postTitle: { $regex: search, $options: 'i'}
+      }
+      const result = await volunteerNeedsCollection.find(query).toArray();
+      res.send(result);
+
     })
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

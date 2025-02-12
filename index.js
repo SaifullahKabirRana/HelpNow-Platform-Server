@@ -116,8 +116,19 @@ async function run() {
     // delete a volunteer request data from db
     app.delete('/volunteerRequest/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
+
+      // Find the volunteer request before deleting (to get volunteerId)
+      const volunteerRequest = await volunteerRequestsCollection.findOne(query);
+      // delete the request
       const result = await volunteerRequestsCollection.deleteOne(query);
+
+      // Update volunteersNeeded
+      const volunteerQuery = { _id: new ObjectId(volunteerRequest?.volunteerId) }
+      const updateDoc = {
+        $inc: { volunteersNeeded: + 1 }
+      }
+      const updateVolunteersNeeded = await volunteerNeedsCollection.updateOne(volunteerQuery, updateDoc);
       res.send(result);
     })
 

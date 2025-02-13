@@ -151,6 +151,18 @@ async function run() {
       res.send(result);
     })
 
+    // update status 
+    app.patch('/volunteer-requests/:id', async (req, res) => {
+      const id = req.params.id;
+      const status = req.body;
+      const query = {_id : new ObjectId(id)};
+      const updateDoc = {
+        $set: status,
+      }
+      const result = await volunteerRequestsCollection.updateOne(query, updateDoc);
+      res.send(result);
+    })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error

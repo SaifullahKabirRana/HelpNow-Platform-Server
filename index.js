@@ -143,6 +143,14 @@ async function run() {
 
     })
 
+    // get all volunteer requests for organizer
+    app.get('/volunteer-requests/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {'organizer.email': email};
+      const result = await volunteerRequestsCollection.find(query).toArray();
+      res.send(result);
+    })
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error

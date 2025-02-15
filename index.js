@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser')
 
 require('dotenv').config();
@@ -20,7 +21,6 @@ app.use(cookieParser());
 
 
 
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xmhoqrm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -37,6 +37,22 @@ async function run() {
 
     const volunteerNeedsCollection = client.db('helpNow-platform').collection('volunteerNeeds');
     const volunteerRequestsCollection = client.db('helpNow-platform').collection('volunteerRequests');
+
+    // jwt generate
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      console.log(user);;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '30d'
+      })
+      res
+        .cookie('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+        })
+        .send({ success: true })
+    })
 
     // get all volunteerNeeds data from db
     app.get('/volunteerNeeds', async (req, res) => {
@@ -62,6 +78,7 @@ async function run() {
     // get all volunteerNeed posted by specific user
     app.get('/volunteerNeeds/:email', async (req, res) => {
       const email = req.params.email;
+      console.log('token', req.cookies.token);
       const query = { 'organizer.email': email };
       const result = await volunteerNeedsCollection.find(query).toArray();
       res.send(result);
@@ -136,7 +153,7 @@ async function run() {
     app.get('/searchPosts', async (req, res) => {
       const search = req.query.search;
       const query = {
-        postTitle: { $regex: search, $options: 'i'}
+        postTitle: { $regex: search, $options: 'i' }
       }
       const result = await volunteerNeedsCollection.find(query).toArray();
       res.send(result);
@@ -146,7 +163,7 @@ async function run() {
     // get all volunteer requests for organizer
     app.get('/volunteer-requests/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {'organizer.email': email};
+      const query = { 'organizer.email': email };
       const result = await volunteerRequestsCollection.find(query).toArray();
       res.send(result);
     })
@@ -155,7 +172,7 @@ async function run() {
     app.patch('/volunteer-requests/:id', async (req, res) => {
       const id = req.params.id;
       const status = req.body;
-      const query = {_id : new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: status,
       }

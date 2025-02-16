@@ -19,7 +19,31 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+// middleware
+const logger = async (req, res, next) => {
+  console.log('called:', req.host, req.originalUrl);
+  next();
+}
 
+// verify jwt middleware
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log('value of the token in middleware:', token);
+  if (!token) {
+    return res.status(401).send({ message: 'Unauthorized' })
+  }
+  if (token) {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).send({ message: 'Unauthorized' });
+      }
+      console.log('decoded', decoded);
+      req.user = decoded;
+      next();
+    })
+  }
+
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xmhoqrm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -75,17 +99,21 @@ async function run() {
       res.send(result);
     })
 
-    // get all volunteerNeed posted by specific user
-    app.get('/volunteerNeeds/:email', async (req, res) => {
+    // get all volunteerNeed posted by specific user (manage may post)
+    app.get('/volunteerNeeds/:email', logger, verifyToken, async (req, res) => {
+      const tokenEmail = req.user?.email;
       const email = req.params.email;
-      console.log('token', req.cookies.token);
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'Forbidden access' })
+      }
+      console.log(' valid token email', email);
       const query = { 'organizer.email': email };
       const result = await volunteerNeedsCollection.find(query).toArray();
       res.send(result);
     })
 
-    // update a volunteerNeed data in db
-    app.put('/volunteerNeed/:id', async (req, res) => {
+    // update a volunteerNeed data in db (manage my post)
+    app.put('/volunteerNeed/:id', logger, verifyToken, async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -99,16 +127,16 @@ async function run() {
       res.send(result);
     })
 
-    // delete a volunteerNeed data from db
-    app.delete('/volunteerNeed/:id', async (req, res) => {
+    // delete a volunteerNeed data from db (manage my post)
+    app.delete('/volunteerNeed/:id', verifyToken, logger, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedsCollection.deleteOne(query);
       res.send(result);
     })
 
-    // save a volunteerRequest data in db
-    app.post('/volunteerRequest', async (req, res) => {
+    // save a volunteerRequest data in db (be a volunteer)
+    app.post('/volunteerRequest', verifyToken, async (req, res) => {
       const volunteerData = req.body;
       const result = await volunteerRequestsCollection.insertOne(volunteerData);
 
@@ -122,16 +150,16 @@ async function run() {
       res.send(result)
     })
 
-    // get all volunteer request for a user by email from db
-    app.get('/my-request/:email', async (req, res) => {
+    // get all volunteer request for a user by email from db (manage my post)
+    app.get('/my-request/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { 'volunteer.email': email };
       const result = await volunteerRequestsCollection.find(query).toArray();
       res.send(result);
     });
 
-    // delete a volunteer request data from db
-    app.delete('/volunteerRequest/:id', async (req, res) => {
+    // delete a volunteer request data from db (manage my post)
+    app.delete('/volunteerRequest/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
@@ -160,8 +188,8 @@ async function run() {
 
     })
 
-    // get all volunteer requests for organizer
-    app.get('/volunteer-requests/:email', async (req, res) => {
+    // get all volunteer requests for organizer (volunteer requests)
+    app.get('/volunteer-requests/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { 'organizer.email': email };
       const result = await volunteerRequestsCollection.find(query).toArray();

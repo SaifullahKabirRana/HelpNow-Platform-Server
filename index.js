@@ -19,11 +19,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
-// middleware
-const logger = async (req, res, next) => {
-  console.log('called:', req.host, req.originalUrl);
-  next();
-}
 
 // verify jwt middleware
 const verifyToken = (req, res, next) => {
@@ -78,6 +73,19 @@ async function run() {
         .send({ success: true })
     })
 
+    // clear token on logout
+    app.post('/logout', async (req, res) => {
+      const user = req.body;
+      res
+        .clearCookie('token', {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+          maxAge: 0
+        })
+        .send({ success: true });
+    })
+
     // get all volunteerNeeds data from db
     app.get('/volunteerNeeds', async (req, res) => {
       const result = await volunteerNeedsCollection.find().sort({ deadline: 1 }).toArray();
@@ -100,7 +108,7 @@ async function run() {
     })
 
     // get all volunteerNeed posted by specific user (manage may post)
-    app.get('/volunteerNeeds/:email', logger, verifyToken, async (req, res) => {
+    app.get('/volunteerNeeds/:email', verifyToken, async (req, res) => {
       const tokenEmail = req.user?.email;
       const email = req.params.email;
       if (tokenEmail !== email) {
@@ -113,7 +121,7 @@ async function run() {
     })
 
     // update a volunteerNeed data in db (manage my post)
-    app.put('/volunteerNeed/:id', logger, verifyToken, async (req, res) => {
+    app.put('/volunteerNeed/:id', async (req, res) => {
       const id = req.params.id;
       const updateData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -128,7 +136,7 @@ async function run() {
     })
 
     // delete a volunteerNeed data from db (manage my post)
-    app.delete('/volunteerNeed/:id', verifyToken, logger, async (req, res) => {
+    app.delete('/volunteerNeed/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedsCollection.deleteOne(query);
@@ -136,7 +144,7 @@ async function run() {
     })
 
     // save a volunteerRequest data in db (be a volunteer)
-    app.post('/volunteerRequest', verifyToken, async (req, res) => {
+    app.post('/volunteerRequest', async (req, res) => {
       const volunteerData = req.body;
       const result = await volunteerRequestsCollection.insertOne(volunteerData);
 
@@ -152,14 +160,18 @@ async function run() {
 
     // get all volunteer request for a user by email from db (manage my post)
     app.get('/my-request/:email', verifyToken, async (req, res) => {
+      const tokenEmail = req.user?.email;
       const email = req.params.email;
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'Forbidden access' })
+      }
       const query = { 'volunteer.email': email };
       const result = await volunteerRequestsCollection.find(query).toArray();
       res.send(result);
     });
 
     // delete a volunteer request data from db (manage my post)
-    app.delete('/volunteerRequest/:id', verifyToken, async (req, res) => {
+    app.delete('/volunteerRequest/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
@@ -190,7 +202,11 @@ async function run() {
 
     // get all volunteer requests for organizer (volunteer requests)
     app.get('/volunteer-requests/:email', verifyToken, async (req, res) => {
+      const tokenEmail = req.user?.email;
       const email = req.params.email;
+      if (tokenEmail !== email) {
+        return res.status(403).send({ message: 'Forbidden access' })
+      }
       const query = { 'organizer.email': email };
       const result = await volunteerRequestsCollection.find(query).toArray();
       res.send(result);

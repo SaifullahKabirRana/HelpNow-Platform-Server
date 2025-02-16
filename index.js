@@ -23,7 +23,6 @@ app.use(cookieParser());
 // verify jwt middleware
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  console.log('value of the token in middleware:', token);
   if (!token) {
     return res.status(401).send({ message: 'Unauthorized' })
   }
@@ -32,7 +31,6 @@ const verifyToken = (req, res, next) => {
       if (err) {
         return res.status(401).send({ message: 'Unauthorized' });
       }
-      console.log('decoded', decoded);
       req.user = decoded;
       next();
     })
@@ -60,7 +58,6 @@ async function run() {
     // jwt generate
     app.post('/jwt', async (req, res) => {
       const user = req.body;
-      console.log(user);;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: '30d'
       })
@@ -114,7 +111,7 @@ async function run() {
       if (tokenEmail !== email) {
         return res.status(403).send({ message: 'Forbidden access' })
       }
-      console.log(' valid token email', email);
+
       const query = { 'organizer.email': email };
       const result = await volunteerNeedsCollection.find(query).toArray();
       res.send(result);
@@ -146,6 +143,20 @@ async function run() {
     // save a volunteerRequest data in db (be a volunteer)
     app.post('/volunteerRequest', async (req, res) => {
       const volunteerData = req.body;
+
+      console.log("Incoming Volunteer Data:", volunteerData);
+      // check if its a duplicate request
+      const query = {
+        'volunteer.email': volunteerData.volunteer?.email,
+        volunteerId: volunteerData.volunteerId
+      }
+      const alreadyApplied = await volunteerRequestsCollection.findOne(query);
+      if (alreadyApplied) {
+        return res
+          .status(400)
+          .send('You have already requested on this post')
+      }
+
       const result = await volunteerRequestsCollection.insertOne(volunteerData);
 
       // Update volunteersNeeded count in volunteerNeedsCollection
